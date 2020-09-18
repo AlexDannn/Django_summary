@@ -1,0 +1,1 @@
+web: gunicorn django_summary_1.wsgi

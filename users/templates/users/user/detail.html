@@ -1,0 +1,130 @@
+{% extends "blog/base.html" %}
+{% load thumbnail %}
+
+{% block content %}
+
+
+{% if user.followers.all %}
+<h3>Followers: </h3>
+{% for follower in user.followers.all %}
+{% thumbnail follower.profile.image "40x40" crop="50%" as im %}
+<img src="{{ im.url }}" class="user-detail">
+{% endthumbnail %}
+{% endfor %}
+{% endif %}
+
+<br><br>
+{% if user.following.all %}
+<h3>Following: </h3>
+{% for follower in user.following.all %}
+{% thumbnail follower.profile.image "40x40" crop="50%" as im %}
+<img src="{{ im.url }}" class="user-detail">
+{% endthumbnail %}
+{% endfor %}
+{% endif %}
+
+
+<div id="header">
+
+  <h1>{{ user.get_full_name }}</h1>
+  <div class="profile-info">
+    {% thumbnail user.profile.image "180x180" crop="100%" as im %}
+    <img src="{{ im.url }}" class="user-detail">
+    {% endthumbnail %}
+  </div>
+</div>
+
+<div id="header">
+  {% with total_followers=user.followers.count %}
+  <span class="count">
+    <span class="total">{{ total_followers }}</span>
+    follower{{ total_followers|pluralize }}
+  </span>
+
+
+
+  {% if request.user.id != user.id %}
+  <a href="#" data-id="{{ user.id }}" data-action="{% if request.user in user.followers.all %}un{% endif %}follow"
+    class="follow button">
+    {% if request.user not in user.followers.all %}
+    Follow
+    {% else %}
+    Unfollow
+    {% endif %}
+  </a>
+  {% endif %}
+  {% endwith %}
+</div>
+
+{% if not page_obj %}
+<div class="content-section">
+
+  <p>No posts yet.</p>
+</div>
+{% else %}
+<div class="content-section">
+  {% for post in page_obj %}
+  <article class="media content-section">
+    <div class="media-body">
+      <div class="article-metadata">
+        <a class="mr-2" href="#">{{ post.author }}</a>
+        <small class="text-muted">{{ post.date_posted|date:"F d, Y" }}</small>
+      </div>
+      <h2><a class="article-title" href="#">{{ post.title }}</a></h2>
+      <p class="article-content">{{ post.content }}</p>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+
+
+{% if page_obj.has_previous %}
+<a class="btn btn-outline-info mb-4" href="?page=1">First</a>
+<a class="btn btn-outline-info mb-4" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+{% endif %}
+
+{% for num in page_obj.paginator.page_range %}
+{% if page_obj.number == num %}
+<a class="btn btn-info mb-4" href="?page={{ num }}">{{ num }}</a>
+{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+<a class="btn btn-outline-info mb-4" href="?page={{ num }}">{{ num }}</a>
+{% endif %}
+{% endfor %}
+
+{% if page_obj.has_next %}
+<a class="btn btn-outline-info mb-4" href="?page={{ page_obj.next_page_number }}">Next</a>
+<a class="btn btn-outline-info mb-4" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+{% endif %}
+{% endif %}
+
+
+{% endblock %}
+
+{% block domready %}
+$('a.follow').click(function(e){
+e.preventDefault();
+$.post('{% url "user_follow" %}',
+{
+id: $(this).data('id'),
+action: $(this).data('action')
+},
+function(data){
+if (data['status'] == 'ok') {
+var previous_action = $('a.follow').data('action');
+
+// toggle data-action
+$('a.follow').data('action',
+previous_action == 'follow' ? 'unfollow' : 'follow');
+// toggle link text
+$('a.follow').text(
+previous_action == 'follow' ? 'Unfollow' : 'Follow');
+
+// update total followers
+var previous_followers = parseInt(
+$('span.count .total').text());
+$('span.count .total').text(previous_action == 'follow' ? previous_followers + 1 : previous_followers - 1);
+}
+}
+);
+});
+{% endblock %}

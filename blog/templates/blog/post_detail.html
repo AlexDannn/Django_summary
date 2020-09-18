@@ -1,0 +1,47 @@
+{% extends "blog/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<article class="media content-section">
+      <div class="media-body">
+        <div class="article-metadata">
+          <a class="mr-2" href="{% url 'user_detail' post.author.username %}">{{ post.author }}</a>
+          <small class="text-muted">{{ post.date_posted|date:"F d, Y" }}</small>
+          {% if post.author == user %}
+          <div>
+           <a class="btn btn-secondary btn-sm mt-1" href="#">Update</a>
+          </div>
+          {% endif %}
+        </div>
+        <h2 class="article-title">{{ post.title }}</h2>
+        <p class="article-content">{{ post.content }}</p>
+      </div>
+    </article>
+
+  <br><br>
+  <hr>
+
+  {% if request.user.is_authenticated %}
+    <form method="POST">
+      {% csrf_token %}
+      {{ comment_form|crispy }}
+      <input type="submit" class="btn btn-secondary btn-sm" value="Leave a comment">
+    </form>
+  {% else %}
+    <div class="main-comment-section">
+      <a class="btn btn-secondary btn-sm mt-4 mb-4" href="{% url 'login' %}">Login to leave a comment</a>
+    </div>
+  {% endif %}
+  <div class="main-comment-section">
+    <h2>{{ comments.count }} Comment{{ comments|pluralize }}</h2>
+    {% for comment in comments %}
+
+    <blockquote class="blockquote">
+      <img class="rounded-circle article-img" src="{{ comment.user.profile.image.url }}">
+      <p class="mb-0">{{ comment.body }}</p>
+      <footer class="blockquote-footer">By <cite title="Source Title">{{ comment.user }}</cite></footer>
+    </blockquote>
+    {% endfor %}
+  </div>
+
+{% endblock %}
